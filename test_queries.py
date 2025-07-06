@@ -6,9 +6,12 @@ from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
-from langchain.chains import GraphQAChain
 
 from networkx.readwrite import json_graph
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
 
 ## ===============================
 ## Parser for Command-line
@@ -24,7 +27,7 @@ args = parser.parse_args()
 ## ===============================
 
 load_dotenv()
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
+llm = ChatOpenAI(model="gpt-4.1", temperature=0)
 
 ## ===============================
 ## Loading graph from json file
@@ -43,17 +46,62 @@ graph_wrapper._graph = nx_graph
 print("Graph loaded successfully.")
 print("-" * 20)
 
-chain = GraphQAChain.from_llm(llm, graph=graph_wrapper, verbose=True)
+## ===============================
+## Custom RAG chain
+## ===============================
 
-# Asking queries to the LLM
+def get_entities(question):
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are an expert at extracting entities from a user question. Only extract the entities, no other text."),
+        ("human", "Extract the key entities from the following question: {question}")
+    ])
+    entity_extraction_chain = prompt | llm | StrOutputParser()
+    return entity_extraction_chain.invoke({"question": question})
+
+def format_graph_context(graph, entities_string):
+    entities = [e.strip() for e in entities_string.split(',')]
+    context = ""
+    for entity in entities:
+        if not graph.has_node(entity):
+            continue
+        node_data = graph.nodes[entity]
+        context += f"Node '{entity}' has properties: {json.dumps(node_data, indent=2)}\n"
+        for source, target, data in graph.edges(entity, data=True):
+            context += f"Edge from '{source}' to '{target}' has relationship '{data['relation']}' with properties: {json.dumps({k: v for k, v in data.items() if k != 'relation'}, indent=2)}\n"
+    return context
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """
+    You are a factual question-answering engine.
+    Your sole purpose is to answer questions based ONLY on the provided context.
+    Do not use any external knowledge. Do not make up information.
+    If the answer to the question is not contained within the context, you MUST respond with the exact phrase: "I don't know."
+    """),
+    ("human", "Question: {question}\n\nContext:\n{context}")
+])
+
+
+chain = (
+    {"question": RunnablePassthrough()}
+    | RunnablePassthrough.assign(context=lambda x: format_graph_context(nx_graph, get_entities(x["question"])))
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+## ===================================
+## Asking queries to LLM
+## ===================================
+
 with open('queries.txt', 'r') as f:
     queries = [line.strip() for line in f if line.strip()]
 
 for i, query in enumerate(queries):
     print(f"\n--- Running Query #{i+1}: '{query}' ---")
-    
+    debug_context = format_graph_context(nx_graph, get_entities(query))
+    print(f"DEBUG CONTEXT:\n{debug_context}")
     response = chain.invoke(query)
     
     print("\n--- Answer ---")
-    print(response["result"])
+    print(response)
     print("="*20)
