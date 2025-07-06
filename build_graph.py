@@ -1,6 +1,5 @@
 import os
 import json
-import pickle
 import argparse
 
 from dotenv import load_dotenv
@@ -112,10 +111,11 @@ def print_graph(graph):
 
 print_graph(nx_graph)
 
-graph_data = json_graph.node_link_data(nx_graph)
+graph_data = json_graph.node_link_data(nx_graph, edges="edges")
 base_name = os.path.splitext(os.path.basename(args.input_file))[0]
 output_filename = f"{base_name}_graph.json"
-with open(output_filename, "wb") as f:
-    pickle.dump(graph_wrapper, f)
+
+with open(output_filename, "w") as f:
+    json.dump(graph_data, f)
 
 print(f"\nGraph saved as {output_filename}")
