@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import argparse
 
 from dotenv import load_dotenv
 
@@ -11,6 +12,7 @@ from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List, Optional
 from pydantic import BaseModel, Field
+from networkx.readwrite import json_graph
 
 ## ==================================
 ## Defining a schema for LLM output
@@ -42,6 +44,15 @@ class KnowledgeGraph(BaseModel):
         description="A list of all relationships between entities from the text."
     )
 
+## ===================================
+## Parse for Command-line
+## ===================================
+
+parser = argparse.ArgumentParser(
+    description="Build a knowledge graph from a source text file.")
+parser.add_argument("input_file", type=str, help="Path to the source text file.")
+args = parser.parse_args()
+
 ## ====================================
 ## Setup for Knowledge Graph
 ## ====================================
@@ -51,7 +62,8 @@ print("--- Creating a Knowledge Graph ---")
 load_dotenv()
 llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
-with open("source_text.txt", "r", encoding="utf-8") as file:
+print(f"Reading source text from: {args.input_file}")
+with open(args.input_file, "r", encoding="utf-8") as file:
     text = file.read()
 documents = [Document(page_content=text)]
 
@@ -100,7 +112,10 @@ def print_graph(graph):
 
 print_graph(nx_graph)
 
-with open("knowledge_graph_marie.pkl", "wb") as f:
+graph_data = json_graph.node_link_data(nx_graph)
+base_name = os.path.splitext(os.path.basename(args.input_file))[0]
+output_filename = f"{base_name}_graph.json"
+with open(output_filename, "wb") as f:
     pickle.dump(graph_wrapper, f)
 
-print("Graph saved as knowledge_graph_marie.pkl")
+print(f"\nGraph saved as {output_filename}")
