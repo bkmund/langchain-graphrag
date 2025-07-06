@@ -10,7 +10,7 @@ from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
 
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List, Optional
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 ## ==================================
 ## Defining a schema for LLM output
@@ -68,7 +68,8 @@ extraction_prompt = ChatPromptTemplate.from_messages([
     ("human", "Extract a knowledge graph from the following text:\n\n{text}")
 ])
 
-extraction_chain = extraction_prompt | llm.with_structured_output(KnowledgeGraph)
+extraction_chain = extraction_prompt | llm.with_structured_output(
+    KnowledgeGraph, method = "function_calling")
 print("Bulding Knowledge graph...")
 extracted_graph = extraction_chain.invoke({"text": text})
 
@@ -76,16 +77,14 @@ extracted_graph = extraction_chain.invoke({"text": text})
 ## Saving the graph
 ## ======================================
 
-
-
 graph_wrapper = NetworkxEntityGraph()
 nx_graph = graph_wrapper._graph
 
 for node in extracted_graph.nodes:
-    nx_graph.add_node(node.id, type=node.type, **node.properties)
+    nx_graph.add_node(node.id, type=node.type, **(node.properties or {}))
 
 for rel in extracted_graph.relationships:
-    nx_graph.add_edge(rel.source.id, rel.target.id, relation=rel.type, **rel.properties)
+    nx_graph.add_edge(rel.source, rel.target, relation=rel.type, **(rel.properties or {}))
     
 def print_graph(graph):
     print("\n--- Nodes ---")
