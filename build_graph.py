@@ -1,18 +1,51 @@
 import os
 import json
 import pickle
-import networkx as nx
 
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
-from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_core.documents import Document
 from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
+from typing import List, Optional
+from langchain_core.pydantic_v1 import BaseModel, Field
+
+## ==================================
+## Defining a schema for LLM output
+## ==================================
+
+class Node(BaseModel):
+    """Represents a single entity in the graph."""
+    id: str = Field(description="The unique name or identifier of the entity.")
+    type: str = Field(description="The type of the entity (e.g., Person, Country, Organization, Prize).")
+    properties: Optional[dict] = Field(
+        default_factory=dict,
+        description="A dictionary of properties for the node. Properties must be explicitly mentioned in the source text."
+    )
+
+class Relationship(BaseModel):
+    """Represents a relationship between two entities."""
+    source: str = Field(description="The ID of the source node.")
+    target: str = Field(description="The ID of the target node.")
+    type: str = Field(description="The type of the relationship (e.g., SPOUSE, AWARDED).")
+    properties: Optional[dict] = Field(
+        default_factory=dict,
+        description="A dictionary of properties for the relationship. Properties must be explicitly mentioned in the source text."
+    )
+
+class KnowledgeGraph(BaseModel):
+    """A knowledge graph extracted from a text, adhering to a strict schema."""
+    nodes: List[Node] = Field(description="A list of all unique entities from the text.")
+    relationships: List[Relationship] = Field(
+        description="A list of all relationships between entities from the text."
+    )
+
+## ====================================
+## Setup for Knowledge Graph
+## ====================================
+
 
 print("--- Creating a Knowledge Graph ---")
 load_dotenv()
@@ -22,27 +55,36 @@ with open("source_text.txt", "r", encoding="utf-8") as file:
     text = file.read()
 documents = [Document(page_content=text)]
 
-llm_transformer_filtered = LLMGraphTransformer(
-    llm=llm,
-    allowed_nodes=["Person", "Country", "Organization", "Prize"],
-    allowed_relationships=["NATIONALITY", "LOCATED_IN", "WORKED_AT", "SPOUSE", "AWARDED"],
-    node_properties=["Birth_Year"],
-    relationship_properties=["Start_Year", "Year_Awarded", "Award_Field"]
-    )
-graph_documents_filtered = llm_transformer_filtered.convert_to_graph_documents(documents)
+extraction_prompt = ChatPromptTemplate.from_messages([
+    ("system", """
+    You are an expert data extraction engine. Your sole task is to extract a knowledge graph from the provided text.
+    You must follow these rules without exception:
+    
+    1.  **ONLY USE THE PROVIDED TEXT:** Extract nodes, relationships, and properties mentioned *exclusively* in the source text.
+    2.  **ADHERE TO THE SCHEMA:** The output MUST be a JSON object that strictly follows the provided `KnowledgeGraph` schema.
+    3.  **DO NOT HALLUCINATE:** If a property (like 'birth_year' or 'year_awarded') is not explicitly stated in the text for a given entity or relationship, you MUST NOT include it in the properties dictionary.
+    4.  **CRITICAL RULE:** Do not invent, infer, or use any of your pre-trained knowledge. If the text does not contain the information, the output should not contain it.
+    """),
+    ("human", "Extract a knowledge graph from the following text:\n\n{text}")
+])
 
-print("--- Raw Extracted Graph Document ---")
-print(graph_documents_filtered[0])
-print("-" * 20)
+extraction_chain = extraction_prompt | llm.with_structured_output(KnowledgeGraph)
+print("Bulding Knowledge graph...")
+extracted_graph = extraction_chain.invoke({"text": text})
 
-source_graph = graph_documents_filtered[0]
+## ======================================
+## Saving the graph
+## ======================================
+
+
+
 graph_wrapper = NetworkxEntityGraph()
 nx_graph = graph_wrapper._graph
 
-for node in source_graph.nodes:
+for node in extracted_graph.nodes:
     nx_graph.add_node(node.id, type=node.type, **node.properties)
 
-for rel in source_graph.relationships:
+for rel in extracted_graph.relationships:
     nx_graph.add_edge(rel.source.id, rel.target.id, relation=rel.type, **rel.properties)
     
 def print_graph(graph):
