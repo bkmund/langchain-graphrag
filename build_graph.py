@@ -3,6 +3,7 @@ import json
 import argparse
 
 from dotenv import load_dotenv
+from llm_transformer_build_graph import *
 
 from langchain_openai import ChatOpenAI
 from langchain_core.documents import Document
@@ -57,6 +58,7 @@ args = parser.parse_args()
 ## ====================================
 
 
+
 print("--- Creating a Knowledge Graph ---")
 load_dotenv()
 llm = ChatOpenAI(model="gpt-4o", temperature=0)
@@ -68,13 +70,40 @@ documents = [Document(page_content=text)]
 
 extraction_prompt = ChatPromptTemplate.from_messages([
     ("system", """
-    You are an expert data extraction engine. Your sole task is to extract a knowledge graph from the provided text.
-    You must follow these rules without exception:
-    
-    1.  **ONLY USE THE PROVIDED TEXT:** Extract nodes, relationships, and properties mentioned *exclusively* in the source text.
-    2.  **ADHERE TO THE SCHEMA:** The output MUST be a JSON object that strictly follows the provided `KnowledgeGraph` schema.
-    3.  **DO NOT HALLUCINATE:** If a property (like 'birth_year' or 'year_awarded') is not explicitly stated in the text for a given entity or relationship, you MUST NOT include it in the properties dictionary.
-    4.  **CRITICAL RULE:** Do not invent, infer, or use any of your pre-trained knowledge. If the text does not contain the information, the output should not contain it.
+    "# Knowledge Graph Instructions for GPT-4\n"
+    "## 1. Overview\n"
+    "You are a top-tier algorithm designed for extracting information in structured "
+    "formats to build a knowledge graph.\n"
+    "Try to capture as much information from the text as possible without "
+    "sacrificing accuracy. Do not add any information that is not explicitly "
+    "mentioned in the text.\n"
+    "- **Nodes** represent entities and concepts.\n"
+    "- The aim is to achieve simplicity and clarity in the knowledge graph, making it\n"
+    "accessible for a vast audience.\n"
+    "## 2. Labeling Nodes\n"
+    "- **Consistency**: Ensure you use available types for node labels.\n"
+    "Ensure you use basic or elementary types for node labels.\n"
+    "- For example, when you identify an entity representing a person, "
+    "always label it as **'person'**. Avoid using more specific terms "
+    "like 'mathematician' or 'scientist'."
+    "- **Node IDs**: Never utilize integers as node IDs. Node IDs should be "
+    "names or human-readable identifiers found in the text.\n"
+    "- **Relationships** represent connections between entities or concepts.\n"
+    "Ensure consistency and generality in relationship types when constructing "
+    "knowledge graphs. Instead of using specific and momentary types "
+    "such as 'BECAME_PROFESSOR', use more general and timeless relationship types "
+    "like 'PROFESSOR'. Make sure to use general and timeless relationship types!\n"
+    "## 3. Coreference Resolution\n"
+    "- **Maintain Entity Consistency**: When extracting entities, it's vital to "
+    "ensure consistency.\n"
+    'If an entity, such as "John Doe", is mentioned multiple times in the text '
+    'but is referred to by different names or pronouns (e.g., "Joe", "he"),'
+    "always use the most complete identifier for that entity throughout the "
+    'knowledge graph. In this example, use "John Doe" as the entity ID.\n'
+    "Remember, the knowledge graph should be coherent and easily understandable, "
+    "so maintaining consistency in entity references is crucial.\n"
+    "## 4. Strict Compliance\n"
+    "Adhere to the rules strictly. Non-compliance will result in termination."
     """),
     ("human", "Extract a knowledge graph from the following text:\n\n{text}")
 ])
