@@ -27,7 +27,7 @@ args = parser.parse_args()
 ## ===============================
 
 load_dotenv()
-llm = ChatOpenAI(model="gpt-4.1", temperature=0)
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 ## ===============================
 ## Loading graph from json file
@@ -64,18 +64,42 @@ def format_graph_context(graph, entities_string):
     for entity in entities:
         if not graph.has_node(entity):
             continue
+            
         node_data = graph.nodes[entity]
         context += f"Node '{entity}' has properties: {json.dumps(node_data, indent=2)}\n"
+        
         for source, target, data in graph.edges(entity, data=True):
-            context += f"Edge from '{source}' to '{target}' has relationship '{data['relation']}' with properties: {json.dumps({k: v for k, v in data.items() if k != 'relation'}, indent=2)}\n"
+            relation_props = {k: v for k, v in data.items() if k != 'relation'}
+            context += f"OUTGOING: ({source}) -[{data.get('relation', 'N/A')}]-> ({target})"
+            if relation_props:
+                context += f" with properties: {json.dumps(relation_props)}\n"
+            else:
+                context += "\n"
+
+        for source, target, data in graph.in_edges(entity, data=True):
+            relation_props = {k: v for k, v in data.items() if k != 'relation'}
+            context += f"INCOMING: ({source}) -[{data.get('relation', 'N/A')}]-> ({target})"
+            if relation_props:
+                context += f" with properties: {json.dumps(relation_props)}\n"
+            else:
+                context += "\n"
+                
     return context
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", """
-    You are a factual question-answering engine.
-    Your sole purpose is to answer questions based ONLY on the provided context.
-    Do not use any external knowledge. Do not make up information.
-    If the answer to the question is not contained within the context, you MUST respond with the exact phrase: "I don't know."
+    You are a highly intelligent question-answering assistant that operates on a knowledge graph.
+    Your task is to answer the user's question based *only* on the context provided.
+
+    The context you receive is a structured summary of this graph. It contains:
+    - Nodes (e.g., 'Marie Curie') and their properties (e.g., 'birth_year': 1867).
+    - Relationships connecting them (e.g., OUTGOING: (Marie Curie) -[SPOUSE]-> (Pierre Curie)).
+
+    **Your Rules:**
+    1.  **Interpret Properties:** You must carefully analyze the properties of the nodes to answer questions. For example, if a node has a property `"birth_year": 1867`, you can definitively answer when that person was born.
+    2.  **Follow Relationships:** Use the relationships to understand how entities are connected.
+    3.  **Be Precise:** Your answer must be directly and provably supported by the information in the context.
+    4.  **Do Not Infer:** If the context does not contain the information to answer the question (e.g., the context mentions an award but not the year it was won), you MUST respond with the exact phrase: "I don't know." Do not use any of your outside knowledge.
     """),
     ("human", "Question: {question}\n\nContext:\n{context}")
 ])

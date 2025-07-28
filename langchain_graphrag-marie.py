@@ -3,7 +3,7 @@ import pickle
 import networkx as nx
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_experimental.graph_transformers import LLMGraphTransformer
+from llm_transformer_build_graph import LLMGraphTransformer
 from langchain_core.documents import Document
 from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
 
@@ -11,7 +11,7 @@ load_dotenv()
 
 llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
-with open("source_text.txt", "r", encoding="utf-8") as file:
+with open("marie.txt", "r", encoding="utf-8") as file:
     text = file.read()
 
 documents = [Document(page_content=text)]
