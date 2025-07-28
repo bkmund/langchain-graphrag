@@ -1,3 +1,5 @@
+# Adapted from LLMGraphTransformer 
+# https://python.langchain.com/api_reference/_modules/langchain_experimental/graph_transformers/llm.html#LLMGraphTransformer
 import asyncio
 import json
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union, cast

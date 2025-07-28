@@ -1,13 +1,14 @@
 import os
 import json
 import argparse
+import networkx as nx
 
 from dotenv import load_dotenv
 from llm_transformer_build_graph import *
 
 from langchain_openai import ChatOpenAI
 from langchain_core.documents import Document
-from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
+# from langchain_community.graphs.networkx_graph import NetworkxEntityGraph
 
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List, Optional
@@ -49,7 +50,7 @@ def main():
     # ======================================
     # Saving the graph
     # ======================================
-    nx_graph = NetworkxEntityGraph()
+    nx_graph = nx.DiGraph()
 
     for node in extracted_graph.nodes:
         # Create a dictionary of all attributes.

@@ -1,1 +1,47 @@
-{"directed": true, "multigraph": false, "graph": {}, "nodes": [{"type": "person", "birth_year": 1867, "id": "Marie Curie"}, {"type": "country", "id": "Poland"}, {"type": "country", "id": "France"}, {"type": "person", "id": "Pierre Curie"}, {"type": "prize", "id": "Nobel Prize"}, {"type": "organization", "id": "University of Paris"}, {"id": "radioactivity"}], "edges": [{"relation": "NATIONALITY", "source": "Marie Curie", "target": "Poland"}, {"relation": "NATIONALITY", "source": "Marie Curie", "target": "France"}, {"relation": "RESEARCH", "source": "Marie Curie", "target": "radioactivity"}, {"relation": "AWARDED", "source": "Marie Curie", "target": "Nobel Prize"}, {"relation": "SPOUSE", "source": "Marie Curie", "target": "Pierre Curie"}, {"relation": "PROFESSOR", "source": "Marie Curie", "target": "University of Paris"}, {"relation": "AWARDED", "source": "Pierre Curie", "target": "Nobel Prize"}]}
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "birth_year": "1867",
+      "nationality": "Polish and naturalised-French",
+      "field": "physicist and chemist",
+      "type": "Person",
+      "id": "Marie Curie"
+    },
+    {
+      "type": "Award",
+      "id": "Nobel Prize"
+    },
+    {
+      "type": "Person",
+      "id": "Pierre Curie"
+    },
+    {
+      "type": "Organization",
+      "id": "University Of Paris"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "WINNER",
+      "count": "2",
+      "fields": "two scientific fields",
+      "source": "Marie Curie",
+      "target": "Nobel Prize"
+    },
+    {
+      "relation": "CO-WINNER",
+      "award": "Nobel Prize",
+      "source": "Marie Curie",
+      "target": "Pierre Curie"
+    },
+    {
+      "relation": "PROFESSOR",
+      "year": "1906",
+      "source": "Marie Curie",
+      "target": "University Of Paris"
+    }
+  ]
+}

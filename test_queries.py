@@ -47,7 +47,7 @@ print("Graph loaded successfully.")
 print("-" * 20)
 
 ## ===============================
-## Custom RAG chain
+## RAG chain
 ## ===============================
 
 def get_entities(question):
