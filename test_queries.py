@@ -17,6 +17,9 @@ from langchain_core.output_parsers import StrOutputParser
 ## Parser for Command-line
 ## ===============================
 
+with open('chunks.json', 'r') as f:
+    CHUNK_DATABASE = {chunk['chunk_id']: chunk['text'] for chunk in json.load(f)}
+
 parser = argparse.ArgumentParser(
     description="Test queries against a saved knowledge graph JSON file.")
 parser.add_argument("graph_file", type=str, help="Path to the saved graph JSON file.")
@@ -86,6 +89,39 @@ def format_graph_context(graph, entities_string):
                 
     return context
 
+def retrieve_chunks_from_ids(chunk_ids: list) -> str:
+    """Retrieves the text of specified chunks from the global chunk database."""
+    retrieved_texts = [CHUNK_DATABASE.get(cid, "") for cid in chunk_ids]
+    return "\n\n---\n\n".join(filter(None, retrieved_texts))
+
+def get_relevant_chunk_ids(inputs: dict) -> list:
+    """
+    Uses an LLM to look at the graph context and question,
+    then decides which source_chunk_id to retrieve.
+    """
+    chunk_id_prompt = ChatPromptTemplate.from_messages([
+        ("system", """
+        You are a routing assistant. Based on the user's question and the provided knowledge graph summary,
+        your task is to identify the most relevant 'source_chunk_id' to retrieve for a detailed answer.
+        The graph summary contains properties that include 'source_chunk_id'.
+        Respond ONLY with a comma-separated list of integer chunk IDs. If no specific chunk seems relevant, respond with an empty string.
+        """),
+        ("human", "Question: {question}\n\nGraph Summary:\n{graph_context}")
+    ])
+
+    # A simple chain to parse the LLM's output into a list of integers
+    id_chain = chunk_id_prompt | llm | StrOutputParser()
+    id_string = id_chain.invoke({
+        "question": inputs["question"],
+        "graph_context": inputs["graph_context"]
+    })
+    
+    if not id_string:
+        return []
+    
+    # Clean up and return a list of integers
+    return [int(cid.strip()) for cid in id_string.split(',') if cid.strip().isdigit()]
+
 prompt = ChatPromptTemplate.from_messages([
     ("system", """
     You are a highly intelligent question-answering assistant that operates on a knowledge graph.
@@ -105,13 +141,21 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 
-chain = (
-    {"question": RunnablePassthrough()}
-    | RunnablePassthrough.assign(context=lambda x: format_graph_context(nx_graph, get_entities(x["question"])))
-    | prompt
-    | llm
-    | StrOutputParser()
-)
+rag_chain = (
+        {"question": RunnablePassthrough()}
+        | RunnablePassthrough.assign(
+            graph_context=lambda x: format_graph_context(nx_graph, get_entities(x["question"]))
+        )
+        | RunnablePassthrough.assign(
+            chunk_ids=get_relevant_chunk_ids
+        )
+        | RunnablePassthrough.assign(
+            retrieved_chunks=lambda x: retrieve_chunks_from_ids(x["chunk_ids"])
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
 
 ## ===================================
 ## Asking queries to LLM
@@ -124,7 +168,7 @@ for i, query in enumerate(queries):
     print(f"\n--- Running Query #{i+1}: '{query}' ---")
     debug_context = format_graph_context(nx_graph, get_entities(query))
     print(f"DEBUG CONTEXT:\n{debug_context}")
-    response = chain.invoke(query)
+    response = rag_chain.invoke(query)
     
     print("\n--- Answer ---")
     print(response)
