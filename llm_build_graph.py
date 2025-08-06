@@ -15,6 +15,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from networkx.readwrite import json_graph
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 load_dotenv()
 
 def main():
@@ -38,30 +40,50 @@ def main():
     print(f"Reading source text from: {args.input_file}")
     with open(args.input_file, "r", encoding="utf-8") as file:
         text = file.read()
-    
-    document = Document(page_content=text)
 
+    # ======================================
+    # Chunking document
+    # ======================================
 
-    print("Building Knowledge graph using LLMGraphTransformer...")
-    graph_documents = graph_transformer.convert_to_graph_documents([document])
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+    chunked_documents = text_splitter.create_documents([text])
+    print(f"Split document into {len(chunked_documents)} chunks.")
+
+    chunks_for_retrieval = [{"chunk_id": i, "text": doc.page_content} for i, doc in enumerate(chunked_documents)]
+    with open("chunks.json", "w") as f:
+        json.dump(chunks_for_retrieval, f, indent=2)
+    print("Saved text chunks to chunks.json")
+
+    #document = Document(page_content=text)
+    #print("Building Knowledge graph using LLMGraphTransformer...")
+    #graph_documents = graph_transformer.convert_to_graph_documents([document])
     
-    extracted_graph = graph_documents[0]
+    #extracted_graph = graph_documents[0]
 
     # ======================================
     # Saving the graph
     # ======================================
     nx_graph = nx.DiGraph()
 
-    for node in extracted_graph.nodes:
-        # Create a dictionary of all attributes.
-        all_properties = node.properties.copy() if node.properties else {}
-        # Add the 'type' as just another attribute.
-        all_properties['type'] = node.type
-        # Pass all attributes in a single dictionary.
-        nx_graph.add_node(node.id, **all_properties)
+    for i, doc in enumerate(chunked_documents):
+        print(f"Processing chunk {i}...")
+        graph_document = graph_transformer.convert_to_graph_documents([doc])[0]
 
-    for rel in extracted_graph.relationships:
-        nx_graph.add_edge(rel.source.id, rel.target.id, relation=rel.type, **(rel.properties or {}))
+        for node in graph_document.nodes:
+            # Create a dictionary of all attributes.
+            all_properties = node.properties.copy() if node.properties else {}
+            # Add the 'type' as just another attribute.
+            all_properties['type'] = node.type
+            # Add chunk ID as a property
+            all_properties['source_chunk_id'] = i
+            # Pass all attributes in a single dictionary.
+            nx_graph.add_node(node.id, **all_properties)
+
+        for rel in graph_document.relationships:
+            rel_properties = rel.properties.copy() if rel.properties else {}
+            # Add chunk ID as property
+            rel_properties['source_chunk_id'] = i
+            nx_graph.add_edge(rel.source.id, rel.target.id, relation=rel.type, **(rel.properties or {}))
 
     print_graph(nx_graph)
 
@@ -72,7 +94,6 @@ def main():
 
     with open(output_filename, "w") as f:
         json.dump(graph_data, f, indent=2)
-
     print(f"\nGraph saved as {output_filename}")
 
 def print_graph(graph):
