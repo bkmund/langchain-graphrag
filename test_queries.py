@@ -124,20 +124,23 @@ def get_relevant_chunk_ids(inputs: dict) -> list:
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", """
-    You are a highly intelligent question-answering assistant that operates on a knowledge graph.
-    Your task is to answer the user's question based *only* on the context provided.
+        You are a highly intelligent question-answering assistant. Your task is to synthesize an answer
+        using two sources of information: a structured Knowledge Graph Summary and unstructured Source Text Chunks.
 
-    The context you receive is a structured summary of this graph. It contains:
-    - Nodes (e.g., 'Marie Curie') and their properties (e.g., 'birth_year': 1867).
-    - Relationships connecting them (e.g., OUTGOING: (Marie Curie) -[SPOUSE]-> (Pierre Curie)).
+        1.  **First, review the Knowledge Graph Summary** to understand the entities and their relationships.
+        2.  **Next, carefully read the detailed Source Text Chunks**, as they contain the most precise information and nuance.
+        3.  **Synthesize your final answer based on all provided context.** Prioritize details found in the Source Text Chunks.
+        4.  If the answer is not found in either the summary or the text chunks, you MUST respond with the exact phrase: "I don't know."
+        """),
+        ("human", """
+        Question: {question}
 
-    **Your Rules:**
-    1.  **Interpret Properties:** You must carefully analyze the properties of the nodes to answer questions. For example, if a node has a property `"birth_year": 1867`, you can definitively answer when that person was born.
-    2.  **Follow Relationships:** Use the relationships to understand how entities are connected.
-    3.  **Be Precise:** Your answer must be directly and provably supported by the information in the context.
-    4.  **Do Not Infer:** If the context does not contain the information to answer the question (e.g., the context mentions an award but not the year it was won), you MUST respond with the exact phrase: "I don't know." Do not use any of your outside knowledge.
-    """),
-    ("human", "Question: {question}\n\nContext:\n{context}")
+        Knowledge Graph Summary:
+        {graph_context}
+
+        Source Text Chunks:
+        {retrieved_chunks}
+        """)
 ])
 
 

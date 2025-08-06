@@ -1,0 +1,126 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "birth_year": "1867",
+      "type": "Person",
+      "source_chunk_id": 0,
+      "id": "Marie Curie"
+    },
+    {
+      "type": "Nationality",
+      "source_chunk_id": 0,
+      "id": "Polish"
+    },
+    {
+      "type": "Nationality",
+      "source_chunk_id": 0,
+      "id": "French"
+    },
+    {
+      "type": "Profession",
+      "source_chunk_id": 0,
+      "id": "Physicist"
+    },
+    {
+      "type": "Profession",
+      "source_chunk_id": 0,
+      "id": "Chemist"
+    },
+    {
+      "type": "Field_of_research",
+      "source_chunk_id": 0,
+      "id": "Radioactivity"
+    },
+    {
+      "type": "Person",
+      "source_chunk_id": 3,
+      "id": "She"
+    },
+    {
+      "type": "Award",
+      "source_chunk_id": 2,
+      "id": "Nobel Prize"
+    },
+    {
+      "type": "Field",
+      "source_chunk_id": 1,
+      "id": "Scientific Fields"
+    },
+    {
+      "type": "Person",
+      "source_chunk_id": 2,
+      "id": "Pierre Curie"
+    },
+    {
+      "type": "Organization",
+      "source_chunk_id": 2,
+      "id": "Curie Family"
+    },
+    {
+      "type": "Organization",
+      "source_chunk_id": 3,
+      "id": "University Of Paris"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "HAS_NATIONALITY",
+      "source": "Marie Curie",
+      "target": "Polish"
+    },
+    {
+      "relation": "HAS_NATIONALITY",
+      "source": "Marie Curie",
+      "target": "French"
+    },
+    {
+      "relation": "HAS_PROFESSION",
+      "source": "Marie Curie",
+      "target": "Physicist"
+    },
+    {
+      "relation": "HAS_PROFESSION",
+      "source": "Marie Curie",
+      "target": "Chemist"
+    },
+    {
+      "relation": "RESEARCHED",
+      "source": "Marie Curie",
+      "target": "Radioactivity"
+    },
+    {
+      "relation": "WON",
+      "firstWoman": "true",
+      "firstPersonToWinTwice": "true",
+      "onlyPersonInTwoFields": "true",
+      "source": "She",
+      "target": "Nobel Prize"
+    },
+    {
+      "relation": "PROFESSOR",
+      "year": "1906",
+      "firstWoman": "true",
+      "source": "She",
+      "target": "University Of Paris"
+    },
+    {
+      "relation": "IN",
+      "source": "Nobel Prize",
+      "target": "Scientific Fields"
+    },
+    {
+      "relation": "WINNER",
+      "source": "Pierre Curie",
+      "target": "Nobel Prize"
+    },
+    {
+      "relation": "LEGACY",
+      "number": "5",
+      "source": "Curie Family",
+      "target": "Nobel Prize"
+    }
+  ]
+}

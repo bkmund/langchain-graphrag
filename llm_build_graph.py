@@ -45,7 +45,7 @@ def main():
     # Chunking document
     # ======================================
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=256, chunk_overlap=50)
     chunked_documents = text_splitter.create_documents([text])
     print(f"Split document into {len(chunked_documents)} chunks.")
 
@@ -90,7 +90,7 @@ def main():
     # Save the graph to a JSON file
     graph_data = json_graph.node_link_data(nx_graph, edges="edges")
     base_name = os.path.splitext(os.path.basename(args.input_file))[0]
-    output_filename = f"{base_name}_graph.json"
+    output_filename = f"{base_name}_graph_chunked.json"
 
     with open(output_filename, "w") as f:
         json.dump(graph_data, f, indent=2)
