@@ -19,6 +19,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 load_dotenv()
 
+CHUNK_SIZE = 512
+CHUNK_OVERLAP = 50
+CHUNK_SAVE_FILE = "chunks.json"
+
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(description="Build a knowledge graph from a source text file.")
@@ -45,14 +49,14 @@ def main():
     # Chunking document
     # ======================================
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=256, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
     chunked_documents = text_splitter.create_documents([text])
     print(f"Split document into {len(chunked_documents)} chunks.")
 
     chunks_for_retrieval = [{"chunk_id": i, "text": doc.page_content} for i, doc in enumerate(chunked_documents)]
-    with open("chunks.json", "w") as f:
+    with open(CHUNK_SAVE_FILE, "w") as f:
         json.dump(chunks_for_retrieval, f, indent=2)
-    print("Saved text chunks to chunks.json")
+    print(f"\nSaved text chunks to {CHUNK_SAVE_FILE}")
 
     #document = Document(page_content=text)
     #print("Building Knowledge graph using LLMGraphTransformer...")

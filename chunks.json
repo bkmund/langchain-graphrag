@@ -1,18 +1,10 @@
 [
   {
     "chunk_id": 0,
-    "text": "Marie Curie, born in 1867, was a Polish and naturalised-French physicist and chemist who conducted pioneering research on radioactivity."
+    "text": "Marie Curie, born in 1867, was a Polish and naturalised-French physicist and chemist who conducted pioneering research on radioactivity.\nShe was the first woman to win a Nobel Prize, the first person to win a Nobel Prize twice, and the only person to win a Nobel Prize in two scientific fields.\nHer husband, Pierre Curie, was a co-winner of her first Nobel Prize, making them the first-ever married couple to win the Nobel Prize and launching the Curie family legacy of five Nobel Prizes."
   },
   {
     "chunk_id": 1,
-    "text": "She was the first woman to win a Nobel Prize, the first person to win a Nobel Prize twice, and the only person to win a Nobel Prize in two scientific fields."
-  },
-  {
-    "chunk_id": 2,
-    "text": "Her husband, Pierre Curie, was a co-winner of her first Nobel Prize, making them the first-ever married couple to win the Nobel Prize and launching the Curie family legacy of five Nobel Prizes."
-  },
-  {
-    "chunk_id": 3,
     "text": "She was, in 1906, the first woman to become a professor at the University of Paris."
   }
 ]
